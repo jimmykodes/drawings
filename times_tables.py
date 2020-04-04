@@ -1,26 +1,28 @@
-import cairo
-import math
 import colorsys
+import math
 
+import cairo
 
 LAPTOP = (5120, 2280, 350)
 IPHONE = (640, 1136, 160)
 IPAD = (768, 1028, 200)
 MOVIE = (1920, 1080, 100)
-SQUARE = (200, 200, -20)
+SQUARE = (200, 200, 0)
+unknown = (1280, 384, 200)
+favicon = (30, 30, 0)
 
-width, height, radius_addition = (1280, 384, 200)
+width, height, radius_addition = SQUARE
 cx = width // 2
 cy = height // 2
 radius = max([width, height]) // 2
 radius += radius_addition
 hue_start = .6
 hue_range = 1 / 3
-n_lines = 850
+n_lines = 300
 # n_lines = 48
 step = 0.0005
-# multiplier = 172  # Trillium
-multiplier = 120
+multiplier = 172  # Trillium
+# multiplier = 120
 angle_step = math.tau / n_lines
 
 
@@ -53,17 +55,17 @@ class Line:
 n = multiplier
 lines = [Line(i, angle_step * i - math.pi, angle_step * ((i * n) % n_lines) - math.pi) for i in range(n_lines)]
 
-# with cairo.SVGSurface('logo.svg', width, height) as surface:
-with cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height) as surface:
+with cairo.SVGSurface('logo.svg', width, height) as surface:
+# with cairo.ImageSurface(cairo.FORMAT_ARGB32, width, height) as surface:
     ctx = cairo.Context(surface)
-    # ctx.set_line_width(1)
+    ctx.set_line_width(1)
     # ctx.set_font_size(8)
-    r1 = cairo.RadialGradient(cx, cy, 50, cx, cy, radius)
-    r1.add_color_stop_rgb(1, .1, .1, .1)
-    r1.add_color_stop_rgb(0, .05, .05, .05)
-    ctx.set_source(r1)
-    ctx.rectangle(0, 0, width, height)
-    ctx.fill()
+    # r1 = cairo.RadialGradient(cx, cy, 50, cx, cy, radius)
+    # r1.add_color_stop_rgb(1, .1, .1, .1)
+    # r1.add_color_stop_rgb(0, .05, .05, .05)
+    # ctx.set_source(r1)
+    # ctx.rectangle(0, 0, width, height)
+    # ctx.fill()
     for line in lines:
         # ctx.set_source_rgba(0, 0, 0, 1)
         # radius += 8
