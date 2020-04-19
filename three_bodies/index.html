@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Three Body</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.css"/>
+    <link rel="stylesheet" href="threeBody.css"/>
+</head>
+<body>
+<canvas id="canvas" width="100" height="100"></canvas>
+<div class="ui inverted form">
+    <div class="ui fields">
+        <button class="ui button" id="add-planet">Add Planet</button>
+        <button class="ui icon button" id="pause">Play</button>
+        <button class="ui button" id="clear-paths">Clear Paths</button>
+        <button class="ui button" id="show-paths">Show Paths</button>
+        <button class="ui button" id="show-vector">Show Vectors</button>
+        <button class="ui button" id="clear-planets">Clear</button>
+    </div>
+    <div class="ui hidden" id="planet-form">
+        <div class="ui field">
+            <label for="radius">Radius</label>
+            <input type="range" min="1" max="100" value="50" class="slider" id="radius">
+        </div>
+        <div class="ui field">
+            <label for="xPos">X Position</label>
+            <input type="range" min="1" max="100" value="50" class="slider" id="xPos">
+        </div>
+        <div class="ui field">
+            <label for="yPos">Y Position</label>
+            <input type="range" min="1" max="100" value="50" class="slider" id="yPos">
+        </div>
+        <div class="ui field">
+            <label for="dx">Delta X</label>
+            <input type="range" min="-40" max="40" value="0" class="slider" id="dx">
+        </div>
+        <div class="ui field">
+            <label for="dy">Delta Y</label>
+            <input type="range" min="-40" max="40" value="0" class="slider" id="dy">
+        </div>
+        <div class="ui field">
+            <label for="density">Density</label>
+            <input type="range" min="1" max="100" value="50" class="slider" id="density">
+        </div>
+        <div class="ui field">
+            <label for="hue">Hue</label>
+            <input type="range" min="1" max="360" value="50" class="slider" id="hue">
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/2.4.1/semantic.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.15/lodash.min.js"></script>
+<script src="three_bodies.js"></script>
+</body>
+</html>

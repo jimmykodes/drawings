@@ -1,0 +1,15 @@
+#canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.form {
+    position: absolute;
+    top: 1em;
+    left: 52vw;
+}
+
+.hidden {
+    display: none;
+}

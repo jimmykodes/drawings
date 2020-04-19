@@ -129,3 +129,4 @@ dmypy.json
 # Generated Images
 images/
 
+node_modules/
