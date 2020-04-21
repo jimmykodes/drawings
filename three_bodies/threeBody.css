@@ -1,3 +1,6 @@
+body {
+    background: black;
+}
 #canvas {
     position: absolute;
     top: 0;
@@ -7,7 +10,7 @@
 .form {
     position: absolute;
     top: 1em;
-    left: 52vw;
+    left: 1em;
 }
 
 .hidden {

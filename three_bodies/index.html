@@ -14,9 +14,12 @@
         <button class="ui icon button" id="pause">Play</button>
         <button class="ui button" id="clear-paths">Clear Paths</button>
         <button class="ui button" id="show-paths">Show Paths</button>
+        <button class="ui button" id="show-predictions">Show Predictions</button>
         <button class="ui button" id="show-vector">Show Vectors</button>
         <button class="ui button" id="clear-planets">Clear</button>
     </div>
+</div>
+<div class="ui inverted right floated form">
     <div class="ui hidden" id="planet-form">
         <div class="ui field">
             <label for="radius">Radius</label>
@@ -31,12 +34,12 @@
             <input type="range" min="1" max="100" value="50" class="slider" id="yPos">
         </div>
         <div class="ui field">
-            <label for="dx">Delta X</label>
-            <input type="range" min="-40" max="40" value="0" class="slider" id="dx">
+            <label for="direction">Direction</label>
+            <input type="range" min="0" max="628" value="0" class="slider" id="direction">
         </div>
         <div class="ui field">
-            <label for="dy">Delta Y</label>
-            <input type="range" min="-40" max="40" value="0" class="slider" id="dy">
+            <label for="speed">Speed</label>
+            <input type="range" min="0" max="400" value="0" class="slider" id="speed">
         </div>
         <div class="ui field">
             <label for="density">Density</label>
@@ -45,6 +48,9 @@
         <div class="ui field">
             <label for="hue">Hue</label>
             <input type="range" min="1" max="360" value="50" class="slider" id="hue">
+        </div>
+        <div class="ui field">
+            <button class="ui small button" id="anchor-planet">Anchor Planet</button>
         </div>
     </div>
 </div>

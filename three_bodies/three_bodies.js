@@ -1,8 +1,11 @@
 const gravitationalConstant = 6.674 * (10 ** -11)
 let showPaths = false
+let showPredictions = false
 let pause = true
-let cv, ctx, width, height, planets, showVectors, selectedPlanet
-let $radius, $xPos, $yPos, $dx, $dy, $density, $hue
+let Tau = Math.PI * 2
+let cv, ctx, width, height, planets, showVectors, selectedPlanet, anchoredPlanet
+let $radius, $xPos, $yPos, $direction, $speed, $density, $hue
+let scaleFactor = 1
 const FTPi = Math.PI * (4 / 3)
 
 class Planet {
@@ -16,10 +19,30 @@ class Planet {
         this.dx = initialDX
         this.dy = initialDY
         this.path = []
+        this.pdx = initialDX
+        this.pdy = initialDY
+        this.px = x
+        this.py = y
+        this.predictions = []
     }
 
     get mass() {
         return FTPi * (this.r ** 3) * this.density
+    }
+
+    get magnitude() {
+        return Math.sqrt(this.dx ** 2 + this.dy ** 2)
+    }
+
+    get direction() {
+        if (this.dx === 0) {
+            if (this.dy >= 0) {
+                return Tau / 4
+            } else {
+                return 3 * Tau / 4
+            }
+        }
+        return Math.atan(this.dy / this.dx) + (this.dx < 0 ? Math.PI : 0)
     }
 
     updateVelocity() {
@@ -33,22 +56,46 @@ class Planet {
                 let yDir = y / distance
                 let force = gravitationalConstant * this.mass * planet.mass * sqrMag
                 let acceleration = force / this.mass
-                this.dx += xDir * acceleration
-                this.dy += yDir * acceleration
+                this.dx += xDir * acceleration * 0.001
+                this.dy += yDir * acceleration * 0.001
             }
         })
     }
 
     updatePosition() {
-        this.x += this.dx
-        this.y += this.dy
+        this.x += this.dx - (anchoredPlanet ? anchoredPlanet.dx : 0)
+        this.y += this.dy - (anchoredPlanet ? anchoredPlanet.dy : 0)
         this.path.push([this.x, this.y])
+    }
+
+    updatePVelocity() {
+        _.forEach(planets, planet => {
+            if (planet !== this) {
+                let x = planet.px - this.px
+                let y = planet.py - this.py
+                let sqrMag = x ** 2 + y ** 2
+                let distance = Math.sqrt(sqrMag)
+                let xDir = x / distance
+                let yDir = y / distance
+                let force = gravitationalConstant * this.mass * planet.mass * sqrMag
+                let acceleration = force / this.mass
+                this.pdx += xDir * acceleration * 0.001
+                this.pdy += yDir * acceleration * 0.001
+            }
+        })
+    }
+
+    updatePPosition() {
+        this.px += this.pdx - (anchoredPlanet ? anchoredPlanet.pdx : 0)
+        this.py += this.pdy - (anchoredPlanet ? anchoredPlanet.pdy : 0)
+
+        this.predictions.push([this.px, this.py])
     }
 
     draw() {
         ctx.save()
         ctx.fillStyle = `hsl(${this.color},100%,50%)`
-        ctx.strokeStyle = this.color
+        ctx.strokeStyle = `hsl(${this.color},100%,50%)`
         ctx.beginPath()
         ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2)
         ctx.fill()
@@ -56,6 +103,13 @@ class Planet {
             ctx.beginPath()
             ctx.moveTo(...this.path[0])
             _.forEach(this.path, point => ctx.lineTo(...point))
+            ctx.stroke()
+        }
+        if (showPredictions && this.predictions.length > 0) {
+            ctx.strokeStyle = `hsl(${this.color},100%,50%)`
+            ctx.beginPath()
+            ctx.moveTo(...this.predictions[0])
+            _.forEach(this.predictions, point => ctx.lineTo(...point))
             ctx.stroke()
         }
         if (showVectors) {
@@ -70,8 +124,7 @@ class Planet {
 }
 
 function draw() {
-    ctx.fillStyle = 'rgb(0,0,0)'
-    ctx.fillRect(0, 0, width, height)
+    ctx.clearRect(0, 0, width, height)
     if (!pause) {
         _.forEach(planets, planet => planet.updateVelocity())
         _.forEach(planets, planet => planet.updatePosition())
@@ -80,29 +133,26 @@ function draw() {
     window.requestAnimationFrame(draw.bind(this, ctx, width, height, planets))
 }
 
-function randLocation() {
+function polToCart(theta, radius) {
     return {
-        x: Math.random() * window.innerWidth / 2,
-        y: Math.random() * window.innerHeight,
+        x: radius * Math.cos(theta),
+        y: radius * Math.sin(theta)
     }
 }
 
-function randDirection() {
-    return Math.random() * (Math.random() < .5 ? -1 : 1) * 10
-}
-
 function addPlanet() {
-    let location = randLocation()
-    planets.push(new Planet(
+    let planet = new Planet(
         planets.length + 1,
-        location.x,
-        location.y,
+        width / 2,
+        height / 2,
         20,
         1,
         Math.random() * 360,
-        randDirection(),
-        randDirection()
-    ))
+        0,
+        0
+    )
+    planets.push(planet)
+    selectPlanet(undefined, planet)
 }
 
 function clearPaths() {
@@ -126,29 +176,68 @@ function toggleVectors() {
 
 function clearPlanets() {
     planets = []
+    if (!pause) {
+        togglePause()
+    }
 }
 
-function selectPlanet(e) {
+function selectPlanet(e, planet) {
     selectedPlanet = null
-    _.forEach(planets, p => {
-        if (e.pageX < p.x + p.r && e.pageX > p.x - p.r) {
-            if (e.pageY < p.y + p.r && e.pageY > p.y - p.r) {
-                selectedPlanet = p
+    if (planet) {
+        selectedPlanet = planet
+    } else {
+        _.forEach(planets, p => {
+            if (e.pageX < p.x + p.r && e.pageX > p.x - p.r) {
+                if (e.pageY < p.y + p.r && e.pageY > p.y - p.r) {
+                    selectedPlanet = p
+                }
             }
-        }
-    })
+        })
+    }
+
     if (selectedPlanet) {
         $('#planet-form').show()
         $radius.val(selectedPlanet.r)
         $yPos.val(selectedPlanet.y)
         $xPos.val(selectedPlanet.x)
-        $dx.val(selectedPlanet.dx)
-        $dy.val(selectedPlanet.dy)
+        $direction.val(selectedPlanet.direction * 100)
+        $speed.val(selectedPlanet.magnitude * 10)
         $density.val(selectedPlanet.density)
         $hue.val(selectedPlanet.color)
+        $('#anchor-planet').text(selectedPlanet === anchoredPlanet ? "Remove Planet Anchor" : "Anchor Planet")
     } else {
         $('#planet-form').hide()
     }
+}
+
+function updatePredictions() {
+    if (!showPredictions) {
+        return
+    }
+    _.forEach(planets, p => {
+        p.px = p.x
+        p.py = p.y
+        p.pdx = p.dx
+        p.pdy = p.dy
+        p.predictions = []
+    })
+    _.forEach(_.range(3000), () => {
+        _.forEach(planets, p => {
+            p.updatePVelocity()
+            p.updatePPosition()
+        })
+    })
+}
+
+function togglePredictions() {
+    showPredictions = !showPredictions
+    if (!pause) {
+        togglePause()
+    }
+    if (showPredictions) {
+        updatePredictions()
+    }
+    $('#show-predictions').text(showPredictions ? "Hide Predictions" : "Show Predictions")
 }
 
 $(document).ready(() => {
@@ -156,15 +245,21 @@ $(document).ready(() => {
     ctx = cv.getContext('2d')
     width = window.innerWidth
     height = window.innerHeight
-    cv.width = width
-    cv.height = height
+    let dpr = window.devicePixelRatio
+
+    cv.width = width * dpr
+    cv.height = height * dpr
+    cv.style.height = `${height}px`
+    cv.style.width = `${width}px`
+    ctx.scale(dpr * scaleFactor, dpr * scaleFactor)
+
     planets = []
 
     $radius = $('#radius')
     $yPos = $('#yPos')
     $xPos = $('#xPos')
-    $dx = $('#dx')
-    $dy = $('#dy')
+    $direction = $('#direction')
+    $speed = $('#speed')
     $density = $('#density')
     $hue = $('#hue')
 
@@ -176,66 +271,72 @@ $(document).ready(() => {
     $radius.on('input', function () {
         if (selectedPlanet) {
             selectedPlanet.r = _.toNumber(this.value)
+            updatePredictions()
         }
     })
     $yPos.on('input', function () {
         if (selectedPlanet) {
             selectedPlanet.y = _.toNumber(this.value)
+            updatePredictions()
         }
     })
     $xPos.on('input', function () {
         if (selectedPlanet) {
             selectedPlanet.x = _.toNumber(this.value)
+            updatePredictions()
         }
     })
-    $dx.on('input', function () {
+    $direction.on('input', function () {
         if (selectedPlanet) {
-            selectedPlanet.dx = _.toNumber(this.value)
+            let direction = _.toNumber(this.value) / 100
+            let updates = polToCart(direction, selectedPlanet.magnitude)
+            selectedPlanet.dx = updates.x
+            selectedPlanet.dy = updates.y
+            updatePredictions()
         }
     })
-    $dy.on('input', function () {
+    $speed.on('input', function () {
         if (selectedPlanet) {
-            selectedPlanet.dy = _.toNumber(this.value)
+            let theta = selectedPlanet.direction
+            let updates = polToCart(theta, _.toNumber(this.value) / 10)
+            selectedPlanet.dx = updates.x
+            selectedPlanet.dy = updates.y
+            updatePredictions()
         }
     })
     $density.on('input', function () {
         if (selectedPlanet) {
             selectedPlanet.density = _.toNumber(this.value)
+            updatePredictions()
         }
     })
     $hue.on('input', function () {
         if (selectedPlanet) {
             selectedPlanet.color = this.value
+            updatePredictions()
         }
     })
 
     $('#add-planet').on('click', addPlanet)
     $('#clear-paths').on('click', clearPaths)
     $('#show-paths').on('click', togglePaths)
+    $('#show-predictions').on('click', togglePredictions)
     $('#show-vector').on('click', toggleVectors)
     $('#pause').on('click', togglePause)
     $('#clear-planets').on('click', clearPlanets)
     $('#canvas').on('click', selectPlanet)
+    $('#anchor-planet').on('click', () => {
+        if (anchoredPlanet === selectedPlanet) {
+            anchoredPlanet = null
+        } else {
+            anchoredPlanet = selectedPlanet
+        }
+        updatePredictions()
+        $('#anchor-planet').text(selectedPlanet === anchoredPlanet ? "Remove Planet Anchor" : "Anchor Planet")
 
-    document.addEventListener('keydown', e => {
-        if (!selectedPlanet) {
-            return
-        }
-        switch (e.key) {
-            case "ArrowLeft":
-                selectedPlanet.x -= 10
-                break
-            case "ArrowRight":
-                selectedPlanet.x += 10
-                break
-            case "ArrowUp":
-                selectedPlanet.y -= 10
-                break
-            case "ArrowDown":
-                selectedPlanet.y += 10
-                break
-        }
     })
-
+    window.addEventListener('scroll', function() {
+        console.log('wtf')
+    })
     window.requestAnimationFrame(draw)
 })
