@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flower Seeds</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.css">
+</head>
+<body style="background-color: black">
+<div class="ui grid container">
+    <div class="row">
+        <div class="sixteen wide center aligned column">
+            <canvas id="canvas" width="800" height="800"></canvas>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"
+        integrity="sha256-7/yoZS3548fXSRXqc/xYzjsmuW3sFKzuvOCHd06Pmps=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.js"></script>
+<script>
+    class Point {
+        constructor(i) {
+            this.index = i + 1
+            this.radius = i * .5
+        }
+
+        get x() {
+            return (this.radius * Math.cos(this.index * theta * TAU)) + cx
+        }
+
+        get y() {
+            return (this.radius * Math.sin(this.index * theta * TAU)) + cy
+        }
+
+        get color() {
+            let h = Point.scale(this.index, 0, n_points, 0, 360)
+            return `hsla(${h}, 100%, 50%, 1)`
+        }
+
+
+        static scale(old_value, old_min, old_max, new_min, new_max) {
+            return (((old_value - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+        }
+
+    }
+
+
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d');
+    const height = canvas.height
+    const width = canvas.width
+    const cx = Math.floor(width / 2)
+    const cy = Math.floor(height / 2)
+    const TAU = Math.PI * 2
+    const n_points = 800
+    let theta = Math.random()
+    const theta_increment = 0.00001
+    let points = _.map(_.range(n_points), i => new Point(i))
+
+    ctx.circle = (x, y, r) => {
+        ctx.arc(x, y, r, 0, TAU)
+    }
+
+
+    function draw() {
+        ctx.clearRect(0, 0, width, height)
+        ctx.fillStyle = 'hsla(0,0%,100%,0.8)'
+        ctx.lineWidth = 2
+        ctx.font = "15px Arial"
+        ctx.fillText('Step percent: ' + _.round(theta, 5), 1, height - 2)
+        _.forEach(points, (point, i) => {
+            ctx.save()
+            ctx.fillStyle = point.color
+            ctx.beginPath()
+            ctx.circle(point.x, point.y, 2)
+            ctx.fill()
+            ctx.restore()
+        })
+        theta += theta_increment
+        window.requestAnimationFrame(draw)
+    }
+
+
+    function init() {
+        window.requestAnimationFrame(draw)
+    }
+
+    init()
+</script>
+</body>
+</html>

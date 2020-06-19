@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Times tables</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.css">
+</head>
+<body style="background-color: black">
+<div class="ui grid">
+    <div class="sixteen wide center aligned column">
+        <canvas id="canvas" width="900px" height="900px"></canvas>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"
+        integrity="sha256-7/yoZS3548fXSRXqc/xYzjsmuW3sFKzuvOCHd06Pmps=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.js"></script>
+<script>
+    class Curve {
+        constructor() {
+            this.vpath = []
+            this.x = undefined
+            this.y = undefined
+
+            this.clear = function () {
+                this.vpath = []
+                this.x = undefined
+                this.y = undefined
+            }
+
+            this.add = function () {
+                this.vpath.push({x: this.x, y: this.y})
+                this.x = undefined
+                this.y = undefined
+            }
+        }
+    }
+
+    function init() {
+        window.requestAnimationFrame(draw);
+    }
+
+    let canvas = document.getElementById('canvas')
+    let height = canvas.height
+    let width = canvas.width
+    let w = 100
+    let r = (w / 2) - 5
+    let cols = Math.floor(width / w - 1)
+    let rows = Math.floor(height / w - 1)
+    let theta = 0
+    let cx, cy, x_cord, y_cord;
+    let curves = []
+    _.forEach(_.range(rows), row_num => {
+        _.forEach(_.range(cols), col_num => {
+            curves[row_num] = curves[row_num] || []
+            curves[row_num][col_num] = new Curve()
+        })
+    })
+
+    function draw_rows(ctx) {
+        _.forEach(_.range(rows), j => {
+            ctx.save()
+            ctx.beginPath()
+            cy = w * (1.5 + j)
+            cx = w / 2
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+            ctx.stroke()
+            x_cord = (r * Math.cos((j + 1) * theta - Math.PI / 2)) + cx
+            y_cord = (r * Math.sin((j + 1) * theta - Math.PI / 2)) + cy
+            ctx.beginPath()
+            ctx.arc(x_cord, y_cord, 2, 0, 2 * Math.PI)
+            ctx.fill()
+            ctx.strokeStyle = 'rgba(255, 255, 255, .1)'
+            ctx.beginPath()
+            ctx.moveTo(x_cord, y_cord)
+            ctx.lineTo(width, y_cord)
+            ctx.stroke()
+            ctx.restore()
+            _.forEach(curves[j], curve => {
+                curve.y = y_cord
+            })
+        })
+    }
+
+    function draw_cols(ctx) {
+        _.forEach(_.range(cols), i => {
+            ctx.save()
+            ctx.beginPath()
+            cx = w * (1.5 + i)
+            cy = w / 2
+            ctx.arc(cx, cy, r, 0, 2 * Math.PI)
+            ctx.stroke()
+            x_cord = (r * Math.cos((i + 1) * theta - Math.PI / 2)) + cx
+            y_cord = (r * Math.sin((i + 1) * theta - Math.PI / 2)) + cy
+            ctx.beginPath()
+            ctx.arc(x_cord, y_cord, 3, 0, 2 * Math.PI)
+            ctx.fill()
+            ctx.strokeStyle = 'rgba(255, 255, 255, .1)'
+            ctx.beginPath()
+            ctx.moveTo(x_cord, y_cord)
+            ctx.lineTo(x_cord, height)
+            ctx.stroke()
+            ctx.restore()
+            _.forEach(_.range(rows), row_num => {
+                curves[row_num][i].x = x_cord
+                curves[row_num][i].add()
+            })
+        })
+    }
+
+    function draw() {
+        let ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.strokeStyle = 'rgba(255, 255, 255, .6)'
+        ctx.lineWidth = 2
+        ctx.fillStyle = 'rgba(255, 255, 255, .9)'
+
+        draw_rows(ctx)
+        draw_cols(ctx)
+
+        _.forEach(curves, row => {
+            _.forEach(row, curve => {
+                ctx.beginPath()
+                ctx.moveTo(curve.vpath[0].x, curve.vpath[0].y)
+                _.forEach(curve.vpath, point => {
+                    ctx.lineTo(point.x, point.y)
+                })
+                ctx.stroke()
+            })
+        })
+
+        theta += 0.01
+        if (theta > 2 * Math.PI) {
+            theta = 0
+            _.forEach(_.range(rows), row_num => {
+                _.forEach(_.range(cols), col_num => {
+                    curves[row_num] = curves[row_num] || []
+                    curves[row_num][col_num].clear()
+                })
+            })
+        }
+
+        window.requestAnimationFrame(draw);
+    }
+
+    init();
+</script>
+</body>
+</html>

@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Ellipse</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.css">
+</head>
+<body style="background-color: black">
+<div class="ui grid">
+    <div class="sixteen wide center aligned column">
+        <canvas id="canvas" width="900" height="700"></canvas>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"
+        integrity="sha256-7/yoZS3548fXSRXqc/xYzjsmuW3sFKzuvOCHd06Pmps=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.js"></script>
+<script>
+    let TAU = 2 * Math.PI
+    let scale = (old_value, old_min, old_max, new_min, new_max) => {
+        return (((old_value - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+    }
+    /* ============================================
+               Global Variable Init
+            ============================================ */
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d');
+    const height = canvas.height
+    const width = canvas.width
+    const center = [Math.floor(width / 2), Math.floor(height / 2)]
+    const radius = height / 2 - 40
+    const n_lines = 120
+    const line_waypoints = 100
+    const step = (TAU) / n_lines
+    let theta = 0
+    let count = 0
+    let local_count = 0
+    let _pause = false
+    let hue_start = _.random(360)
+    let hue_range = 60
+    let inverse_hue = (hue_start + 180 + (hue_range / 2)) % 360
+
+    ctx.circle = function (x, y, r) {
+        ctx.arc(x, y, r, 0, TAU)
+    }
+
+
+    /* ============================================
+        Line Class Creation
+     ============================================ */
+
+
+    class Line {
+        constructor(place) {
+            this.place = place < n_lines / 2 ? place : (n_lines / 2) - (place % (n_lines / 2))
+            this.start = [undefined, undefined]
+            this.end = [undefined, undefined]
+            this.points = []
+        }
+
+        get mid() {
+            return [(this.start[0] + this.end[0]) / 2, (this.start[1] + this.end[1]) / 2]
+        }
+
+        get line_color() {
+            let h = scale(this.place, 0, n_lines / 2, hue_start, hue_start + hue_range)
+            return `hsla(${h},100%,50%,0.4)`
+        }
+
+        rotate(_theta) {
+            let [sx, sy] = this.start
+            let [ex, ey] = this.end
+            let [mx, my] = this.mid
+            this.start = [(((sx - mx) * Math.cos(_theta)) - ((sy - my) * Math.sin(_theta))) + mx, (((sx - mx) * Math.sin(_theta)) + ((sy - my) * Math.cos(_theta))) + my]
+            this.end = [(((ex - mx) * Math.cos(_theta)) - ((ey - my) * Math.sin(_theta))) + mx, (((ex - mx) * Math.sin(_theta)) + ((ey - my) * Math.cos(_theta))) + my]
+        }
+
+        make_waypoints() {
+            let [sx, sy] = this.start
+            let [ex, ey] = this.end
+            let x_step = (ex - sx) / line_waypoints
+            let y_step = (ey - sy) / line_waypoints
+            _.forEach(_.range(line_waypoints - 1), i => {
+                let [lx, ly] = _.last(this.points) || this.start
+                this.points.push([lx + x_step, ly + y_step])
+            })
+            this.points.push(this.end)
+        }
+    }
+
+    /* ============================================
+        Functions
+     ============================================ */
+    let lines = _.map(_.range(n_lines), i => {
+        return new Line(i)
+    })
+    let point = undefined
+
+    function get_x(_theta) {
+        return (radius * Math.cos(_theta)) + center[0]
+    }
+
+    function get_y(_theta) {
+        return (radius * Math.sin(_theta)) + center[1]
+    }
+
+    function setup() {
+        point = [_.random(center[0] - radius + 120, center[0] + radius - 120), _.random(center[1] - radius + 120, center[1] + radius - 120)]
+        _.forEach(lines, line => line.start = point)
+        _.forEach(lines, line => {
+            line.end = [get_x(theta), get_y(theta)]
+            line.make_waypoints()
+            theta += step
+        })
+    }
+
+    function clear() {
+        count = 0
+        local_count = 0
+        point = undefined
+        lines = _.map(_.range(n_lines), i => {
+            return new Line(i)
+        })
+        hue_start = _.random(0, 360)
+        inverse_hue = (hue_start + 180) % 360
+    }
+
+    function pause(duration) {
+        _pause = true
+        _.delay(function () {
+            _pause = false
+        }, duration)
+    }
+
+    function draw_point(x, y) {
+        ctx.save()
+        ctx.fillStyle = `hsla(${inverse_hue},100%,50%,0.8)`
+        ctx.beginPath()
+        ctx.circle(x, y, 4)
+        ctx.fill()
+        ctx.restore()
+    }
+
+    function increment_lines(step) {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.strokeStyle = line.line_color
+            ctx.beginPath()
+            ctx.moveTo(...line.start)
+            ctx.lineTo(...line.points[step])
+            ctx.stroke()
+        })
+        ctx.restore()
+    }
+
+    function draw_and_rotate_lines() {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.strokeStyle = line.line_color
+            ctx.beginPath()
+            ctx.moveTo(...line.start)
+            ctx.lineTo(...line.end)
+            ctx.stroke()
+            line.rotate(step / 4)
+        })
+        ctx.restore()
+    }
+
+    /* ============================================
+        Actually Draw
+     ============================================ */
+    function draw() {
+        if (_pause) {
+            window.requestAnimationFrame(draw)
+            return
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.strokeStyle = `hsla(${inverse_hue},100%,50%,0.8)`
+        ctx.lineWidth = 2
+        ctx.fillStyle = 'rgba(255,255,255,0.9)'
+        ctx.beginPath()
+        ctx.circle(...center, radius)
+        ctx.stroke()
+
+        switch (count) {
+            case 0:
+                draw_point(...point)
+                pause(500)
+                count += 1
+                break
+            case 1:
+                increment_lines(local_count)
+                local_count += 1
+                draw_point(...point)
+                if (local_count === line_waypoints) {
+                    pause(500)
+                    local_count = 0
+                    count += 1
+                }
+                break
+            case 2:
+                draw_and_rotate_lines()
+                draw_point(...point)
+                local_count += 1
+                if (local_count === n_lines) {
+                    local_count = 0
+                    count += 1
+                }
+                break
+            default:
+                draw_and_rotate_lines()
+                draw_point(...point)
+                ctx.save()
+                ctx.fillStyle = 'rgba(253,255,45,0.9)'
+                draw_point(...center)
+                ctx.restore()
+
+                pause(1200)
+                clear()
+                setup()
+        }
+        window.requestAnimationFrame(draw)
+
+    }
+
+    function init() {
+        setup()
+        window.requestAnimationFrame(draw)
+    }
+
+    init()
+</script>
+</body>
+</html>

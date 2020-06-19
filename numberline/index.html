@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Numberline</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.css">
+</head>
+<body style="background-color: black">
+<div class="ui grid container">
+    <div class="row">
+        <div class="sixteen wide column">
+            <div class="ui inverted form">
+                <h2 style="color: white;">Choose a Formula to Visualize</h2>
+                <div class="inline fields">
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="formula" onclick="change_formula(this.value)" value="one"
+                                   checked="checked">
+                            <label>1 + (1 / x)</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="formula" onclick="change_formula(this.value)" value="two">
+                            <label>1 / x<sup>2</sup></label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="formula" onclick="change_formula(this.value)" value="three">
+                            <label>1 / x<sup>3</sup></label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="formula" onclick="change_formula(this.value)" value="four">
+                            <label>x / (x<sup>2</sup> - 1)</label>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <div class="ui radio checkbox">
+                            <input type="radio" name="formula" onclick="change_formula(this.value)" value="five">
+                            <label>Random</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="sixteen wide center aligned column">
+            <canvas id="canvas" width="1200" height="400"></canvas>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"
+        integrity="sha256-7/yoZS3548fXSRXqc/xYzjsmuW3sFKzuvOCHd06Pmps=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.js"></script>
+<script>
+    /* ============================================
+                   Line Class Creation
+       ============================================ */
+    class Line {
+        constructor(value) {
+            this.start = [undefined, undefined]
+            this.end = [undefined, undefined]
+            this.value = value
+            this.line_color = undefined
+            this.point_color = undefined
+            this.line_waypoints = 100
+            this.points = []
+
+            this.make_waypoints = function () {
+                this.points = []
+                let [sx, sy] = this.start
+                let [ex, ey] = this.end
+                let x_step = (ex - sx) / this.line_waypoints
+                let y_step = (ey - sy) / this.line_waypoints
+                _.forEach(_.range(this.line_waypoints - 1), i => {
+                    let [lx, ly] = _.last(this.points) || this.start
+                    this.points.push([lx + x_step, ly + y_step])
+                })
+                this.points.push(this.end)
+            }
+        }
+    }
+
+    /* ============================================
+        Global Variable Init
+     ============================================ */
+    const TAU = Math.PI * 2
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d');
+    const height = canvas.height
+    const width = canvas.width
+    const y1 = height / 10
+    const y2 = 9 * height / 10
+    const start = -3
+    const end = 3
+    let formula = 'one'
+    const formulas = {
+        one: (v) => 1 + (1 / v),
+        two: (v) => 1 / (v ** 2),
+        three: (v) => 1 / (v ** 3),
+        four: (v) => v / ((v ** 2) - 1),
+        five: (v) => (Math.random() * (end - start)) + start,
+    }
+    const func = (value) => {
+        return formulas[formula](value)
+    }
+
+    function change_formula(value) {
+        formula = value
+        reset()
+    }
+
+    const tick_count = end - start
+    const tick_increment = width / tick_count
+    const tick_length = 20
+    const point_count = 150
+    const point_increment = width / point_count
+
+    const value_to_pix = (value) => {
+        return (value - start) * width / (end - start);
+    }
+
+    const lines = _.map(_.range(start, end, (end - start) / point_count), (value, index) => {
+        let l = new Line(value)
+        let x = index * point_increment
+        l.start = [x, y1]
+        l.end = [value_to_pix(func(l.value)), y2]
+        l.line_color = value_to_G_RGBA(l.value)
+        l.point_color = value_to_R_RGBA(l.value)
+        l.make_waypoints()
+        return l
+    })
+    let _pause = false
+    let count = 0
+    let local_count = 0
+
+    /* ============================================
+        Functions
+     ============================================ */
+    function reset() {
+        count = 1
+        local_count = 0
+        _.forEach(lines, line => {
+            line.end = [value_to_pix(func(line.value)), y2]
+            line.make_waypoints()
+        })
+    }
+
+    function pause(duration) {
+        _pause = true
+        _.delay(function () {
+            _pause = false
+        }, duration)
+    }
+
+    function value_to_G_RGBA(value) {
+        return `rgba(25,${(value - end) * 255 / (start - end)},255,0.3)`
+    }
+
+    function value_to_R_RGBA(value) {
+        return `rgba(${(value - end) * 255 / (start - end)},255,25,0.7)`
+    }
+
+    function increment_lines(step) {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.strokeStyle = line.line_color
+            ctx.beginPath()
+            ctx.moveTo(...line.start)
+            ctx.lineTo(...line.points[step])
+            ctx.stroke()
+        })
+        ctx.restore()
+    }
+
+    function trace_lines(step) {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.fillStyle = line.point_color.replace('0.7)', '1)')
+            ctx.beginPath()
+            ctx.arc(...line.points[step], 2, 0, TAU)
+            ctx.fill()
+        })
+        ctx.restore()
+    }
+
+    function draw_lines() {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.strokeStyle = line.line_color
+            ctx.beginPath()
+            ctx.moveTo(...line.start)
+            ctx.lineTo(...line.end)
+            ctx.stroke()
+        })
+        ctx.restore()
+    }
+
+    function draw_starts() {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.beginPath()
+            ctx.fillStyle = line.point_color
+            ctx.arc(...line.start, 3, 0, TAU)
+            ctx.fill()
+        })
+        ctx.restore()
+    }
+
+    function draw_ends() {
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.fillStyle = line.point_color
+            ctx.beginPath()
+            ctx.arc(...line.end, 3, 0, TAU)
+            ctx.fill()
+        })
+        ctx.restore()
+    }
+
+    function draw_number_line() {
+        ctx.beginPath()
+        ctx.moveTo(0, y1)
+        ctx.lineTo(width, y1)
+        ctx.moveTo(0, y2)
+        ctx.lineTo(width, y2)
+        _.forEach(_.range(tick_count), i => {
+            if (i > 0) {
+                ctx.moveTo(tick_increment * i, y1 - tick_length / 2)
+                ctx.lineTo(tick_increment * i, y1 + tick_length / 2)
+                ctx.moveTo(tick_increment * i, y2 - tick_length / 2)
+                ctx.lineTo(tick_increment * i, y2 + tick_length / 2)
+            }
+        })
+        ctx.stroke()
+    }
+
+    /* ============================================
+        Actually Draw
+     ============================================ */
+    function draw() {
+        if (_pause) {
+            window.requestAnimationFrame(draw)
+            return
+        }
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)'
+        ctx.lineWidth = 2
+        ctx.fillStyle = 'rgba(255,255,255,0.9)'
+        draw_number_line()
+
+        switch (count) {
+            case 0:
+                count += 1
+                pause(500)
+                break
+            case 1:
+                draw_starts()
+                pause(200)
+                count += 1
+                break
+            case 2:
+                increment_lines(local_count)
+                draw_starts()
+                local_count += 1
+                if (local_count === lines[0].line_waypoints) {
+                    local_count = 0
+                    count += 1
+                }
+                break
+            default:
+                draw_lines()
+                draw_starts()
+                draw_ends()
+                trace_lines(local_count)
+                local_count += 1
+                if (local_count === lines[0].line_waypoints) {
+                    local_count = 0
+                }
+
+        }
+
+        window.requestAnimationFrame(draw)
+    }
+
+    function init() {
+        window.requestAnimationFrame(draw)
+    }
+
+    init()
+</script>
+</body>
+</html>

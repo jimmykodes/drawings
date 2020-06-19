@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Times tables</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.css">
+</head>
+<body style="background-color: black">
+<div class="ui grid container">
+    <div class="row">
+        <div class="sixteen wide column">
+            <div class="ui inverted form">
+                <div class="field">
+                    <label>Multiplier</label>
+                    <div class="ui inverted range slider" id="mult_slider"></div>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label>Number of lines</label>
+                        <div class="ui inverted slider" id="lines_slider"></div>
+                    </div>
+                    <div class="field">
+                        <label>Step</label>
+                        <div class="ui inverted slider" id="step_slider"></div>
+                    </div>
+                </div>
+                <div class="field">
+                    <div class="ui primary button" id="animate_button">Animate</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="sixteen wide center aligned column">
+            <canvas id="canvas" width="600" height="600"></canvas>
+        </div>
+    </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.11/lodash.min.js"
+        integrity="sha256-7/yoZS3548fXSRXqc/xYzjsmuW3sFKzuvOCHd06Pmps=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fomantic-ui/2.7.6/semantic.min.js"></script>
+<script>
+    let TAU = 2 * Math.PI
+    let scale = (old_value, old_min, old_max, new_min, new_max) => {
+        return (((old_value - old_min) * (new_max - new_min)) / (old_max - old_min)) + new_min
+    }
+
+    /* ============================================
+                Line Class Creation
+    ============================================ */
+    class Line {
+        constructor(place, start_theta, end_theta) {
+            this.start_theta = start_theta
+            this.end_theta = end_theta
+            this.hue_value = scale(place, 0, n_lines, start_hue, start_hue + hue_range)
+        }
+
+        static get_xy(_theta) {
+            return [(radius * Math.cos(_theta)) + cx, (radius * Math.sin(_theta)) + cy]
+        }
+
+        line_color() {
+            return `hsla(${this.hue_value},100%,50%,0.3)`
+        }
+
+        start() {
+            return Line.get_xy(this.start_theta)
+        }
+
+        end() {
+            return Line.get_xy(this.end_theta)
+        }
+
+        increment_hue(step) {
+            this.hue_value = (this.hue_value + step) % 360
+        }
+
+    }
+
+    /* ============================================
+        Global Variable Init
+     ============================================ */
+    const canvas = document.getElementById('canvas')
+    const ctx = canvas.getContext('2d');
+    const height = canvas.height
+    const width = canvas.width
+    const cx = Math.floor(width / 2)
+    const cy = Math.floor(height / 2)
+    const radius = _.min([cx, cy]) - 10
+    const hue_range = 50
+    let start_hue = 180
+    let n_lines
+    let start
+    let end
+    let multiplier
+    let step
+    let _pause = true
+    let count = 0
+    let hue_offset = 0
+
+    function set_vars(_n_lines, _start, _end, _multiplier, _step, pause) {
+        n_lines = _n_lines
+        start = _start
+        end = _end
+        multiplier = _multiplier
+        step = _step
+        _pause = pause
+
+        count = 0
+        draw()
+    }
+
+    /* ============================================
+        Draw
+     ============================================ */
+    function draw() {
+        let angle_step = TAU / n_lines
+        let lines = _.map(_.range(n_lines), i => {
+            let l = new Line(i, angle_step * i - Math.PI, angle_step * ((i * multiplier) % n_lines) - Math.PI)
+            l.increment_hue(hue_offset)
+            return l
+        })
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        ctx.strokeStyle = 'rgba(255,255,255,0.4)'
+        ctx.lineWidth = 2
+        ctx.fillStyle = 'rgba(255,255,255,0.9)'
+        ctx.font = "15px Arial"
+        ctx.save()
+        _.forEach(lines, line => {
+            ctx.strokeStyle = line.line_color()
+            ctx.beginPath()
+            ctx.moveTo(...line.start())
+            ctx.lineTo(...line.end())
+            ctx.stroke()
+        })
+        ctx.restore()
+        ctx.fillText(`Start: ${start}`, 0, 20)
+        ctx.fillText(`End: ${end}`, 0, 40)
+        ctx.fillText(`Current: ${multiplier}`, 0, 60)
+        ctx.fillText(`Number of Lines: ${n_lines}`, 0, 80)
+        ctx.fillText(`Step: ${step}`, 0, 100)
+    }
+
+
+    /* ============================================
+        Animate
+     ============================================ */
+    function run_animation() {
+        if (count === 0) {
+            _pause = false
+            count += 1
+        }
+        draw()
+        hue_offset += 0.1
+        if (_pause) {
+            return window.requestAnimationFrame(run_animation)
+        }
+        if (multiplier < end) {
+            multiplier = _.round(multiplier + step, 3)
+            _pause = true
+            _.delay(() => {
+                _pause = false
+            }, 5)
+        }
+        return window.requestAnimationFrame(run_animation)
+    }
+
+    $(document).ready(() => {
+        let n_lines = parseInt(localStorage.getItem('n_lines')) || 200
+        let start = parseFloat(localStorage.getItem('start')) || 2
+        let mult = start
+        let end = parseFloat(localStorage.getItem('end')) || Math.floor(n_lines / 2)
+        let step = parseFloat(localStorage.getItem('step')) || 0.1
+        let _pause = false
+
+        $('#mult_slider').slider({
+            min: 2,
+            max: Math.floor(n_lines / 2),
+            start: start,
+            end: end,
+            step: 0.2,
+            onMove: (diff, upper, lower) => {
+                let min = _.min([upper, lower])
+                let max = _.max([upper, lower])
+                localStorage.setItem('start', min)
+                localStorage.setItem('end', max)
+                start = min
+                end = max
+                set_vars(n_lines, start, end, start, step, true)
+            }
+        })
+
+        $('#lines_slider').slider({
+            min: 10,
+            max: 300,
+            start: n_lines,
+            step: 10,
+            onMove: (value) => {
+                n_lines = value
+                localStorage.setItem('n_lines', n_lines)
+                set_vars(n_lines, start, end, start, step, true)
+            }
+        })
+
+        $('#step_slider').slider({
+            min: 0.001,
+            max: 1,
+            start: step,
+            step: 0.001,
+            onMove: (value) => {
+                step = _.round(value, 3)
+                localStorage.setItem('step', step)
+                set_vars(n_lines, start, end, start, step, true)
+            }
+        })
+
+        $('#animate_button').on('click', run_animation)
+    })
+</script>
+</body>
+</html>
