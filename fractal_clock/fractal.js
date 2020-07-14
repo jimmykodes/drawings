@@ -15,7 +15,7 @@ function Canvas() {
         this.ctx,
         this.width / 2,
         this.height / 2,
-        Math.min(this.width, this.height) * .3,
+        Math.min(this.width, this.height) * .2,
         0
     )
 }
