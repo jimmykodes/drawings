@@ -17,16 +17,13 @@ function Clock(depth, canvas, ctx, cx, cy, r, offset) {
     this.m = undefined
     this.s = undefined
     this.ms = undefined
-    this.hRad = undefined
     this.mRad = undefined
     this.sRad = undefined
-    this.hDeg = undefined
     this.mDeg = undefined
     this.sDeg = undefined
-    this.hChild = undefined
     this.mChild = undefined
     this.sChild = undefined
-    this.maxDepth = 8
+    this.maxDepth = 10
 }
 
 Clock.prototype.updateTime = function (now, cx, cy, offset) {
@@ -37,18 +34,12 @@ Clock.prototype.updateTime = function (now, cx, cy, offset) {
     this.ms = now.getMilliseconds()
     this.s = (now.getSeconds() + (this.ms / 1000))
     this.m = (now.getMinutes() + (this.s / 60))
-    this.h = (now.getHours() + (this.m / 60))
-    this.hRad = (this.h * TAU / 12) + (this.offset || (Math.PI / 2) * -1)
     this.mRad = (this.m * TAU / 60) + (this.offset || (Math.PI / 2) * -1)
     this.sRad = (this.s * TAU / 60) + (this.offset || (Math.PI / 2) * -1)
-    this.hDeg = this.radToDeg(this.hRad)
     this.mDeg = this.radToDeg(this.mRad)
     this.sDeg = this.radToDeg(this.sRad)
     if (this.depth > this.maxDepth) {
         return
-    }
-    if (!this.hChild) {
-        this.hChild = new Clock(this.depth + 1, this.canvas, this.ctx, this.hDeg.x, this.hDeg.y, this.r * .7, this.hRad)
     }
     if (!this.mChild) {
         this.mChild = new Clock(this.depth + 1, this.canvas, this.ctx, this.mDeg.x, this.mDeg.y, this.r * .7, this.mRad)
@@ -56,7 +47,6 @@ Clock.prototype.updateTime = function (now, cx, cy, offset) {
     if (!this.sChild) {
         this.sChild = new Clock(this.depth + 1, this.canvas, this.ctx, this.sDeg.x, this.sDeg.y, this.r * .7, this.sRad)
     }
-    this.hChild.updateTime(now, this.hDeg.x, this.hDeg.y, this.hRad)
     this.mChild.updateTime(now, this.mDeg.x, this.mDeg.y, this.mRad)
     this.sChild.updateTime(now, this.sDeg.x, this.sDeg.y, this.sRad)
 }
