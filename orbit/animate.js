@@ -9,11 +9,13 @@ function main() {
     canvas.style.width = `${width}px`
     canvas.style.height = `${height}px`
     ctx.scale(dpr, dpr)
+    ctx.strokeStyle = 'rgba(255,255,255,1)'
+    ctx.fillStyle = 'rgba(255,255,255,1)'
     let cx = Math.round(width / 2)
     let cy = Math.round(height / 2)
     let innerOrbit = new Orbit(ctx, cx, cy, Math.round(Math.min(height, width) / 2 * .3))
     let outerOrbit = new Orbit(ctx, cx, cy, Math.round(Math.min(height, width) / 2 * .8))
-    let innerPlanet = new OrbitPlanet(ctx, 0, 9, innerOrbit)
+    let innerPlanet = new OrbitPlanet(ctx, 0, 22, innerOrbit)
     let outerPlanet = new OrbitPlanet(ctx, 0, 2, outerOrbit)
     let lines = new Lines(ctx)
 

@@ -14,7 +14,7 @@ function OrbitPlanet(ctx, theta, speed, orbit) {
 }
 
 OrbitPlanet.prototype.draw = function () {
-    this.orbit.draw()
+    // this.orbit.draw()
     this.ctx.save()
     this.ctx.beginPath()
     this.ctx.arc(this.coords.x, this.coords.y, 5, 0, 2 * Math.PI)

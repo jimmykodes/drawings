@@ -11,7 +11,7 @@ function Lines(ctx) {
 Lines.prototype.draw = function () {
     let ctx = this.ctx
     ctx.save()
-    ctx.strokeStyle = 'rgba(0,0,0,.5)'
+    ctx.strokeStyle = 'rgba(255,255,255,.7)'
     ctx.beginPath()
     this.lines.forEach(line => {
         ctx.moveTo(line.startCoords.x, line.startCoords.y)
