@@ -11,35 +11,35 @@ canvas.height = height * dpr
 canvas.style.height = `${height}px`
 canvas.style.width = `${width}px`
 ctx.scale(dpr, dpr)
+ctx.strokeStyle = 'rgb(0,161,255)'
 
 let delta = Math.round(Math.min(width, height) / numPoints)
-
 const squareSide = delta * .25
+const numRows = Math.round(height / delta)
+const numCols = Math.round(width / delta)
 
-let points = new Array(numPoints)
-for (let row = 0; row < numPoints; row++) {
-    points[row] = new Array(numPoints)
+let points = new Array(numRows)
+for (let row = 0; row < numRows; row++) {
+    points[row] = new Array(numCols)
 }
 
 
 noise.seed(Math.random())
-
 function draw() {
     ctx.clearRect(0, 0, width, height)
-    for (let row = 0; row < numPoints; row++) {
-        for (let col = 0; col < numPoints; col++) {
-            points[row][col] = noise.perlin3(row / 15, col / 15, new Date().getTime()/2000) > 0 ? 1 : 0
-            // points[row][col] = (Math.random() > 0.5 ? 1 : 0)
+    for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+            points[row][col] = noise.simplex3(row / 15, col / 15, new Date().getTime()/2000) > 0 ? 1 : 0
         }
     }
 
-    for (let row = 0; row < numPoints; row++) {
-        for (let col = 0; col < numPoints; col++) {
+    for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
             ctx.save()
             if (points[row][col]) {
-                ctx.fillStyle = 'rgba(0,0,0,1)'
+                ctx.fillStyle = 'rgb(0,161,255)'
             } else {
-                ctx.fillStyle = 'rgba(0,0,0,.15)'
+                ctx.fillStyle = 'rgba(0,167,255,0.25)'
             }
             ctx.translate(delta * col, delta * row)
             ctx.fillRect(0, 0, squareSide, squareSide)
@@ -54,19 +54,9 @@ function draw() {
 draw()
 
 function pointValue(row, col) {
-    if (row === numPoints - 1 || col === numPoints - 1) {
-        // in the last row just bail
+    if (row === numRows - 1 || col === numCols - 1) {
+        // in the last row/column just bail
         return 0
     }
-    const bits = {
-        8: points[row][col],
-        4: points[row][col + 1],
-        2: points[row + 1][col + 1],
-        1: points[row + 1][col],
-    }
-    let sum = 0
-    for (const bitsKey in bits) {
-        sum += bits[bitsKey] * bitsKey
-    }
-    return sum
+    return points[row][col] << 3 | points[row][col + 1] << 2 | points[row + 1][col + 1] << 1 | points[row + 1][col]
 }
