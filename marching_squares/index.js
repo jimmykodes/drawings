@@ -3,20 +3,19 @@ const ctx = canvas.getContext('2d')
 const width = window.innerWidth
 const height = window.innerHeight
 const dpr = window.devicePixelRatio
-
-const numPoints = 100
-
+let hue = 201
 canvas.width = width * dpr
 canvas.height = height * dpr
 canvas.style.height = `${height}px`
 canvas.style.width = `${width}px`
 ctx.scale(dpr, dpr)
-ctx.strokeStyle = 'rgb(0,161,255)'
+ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`
 
+let numPoints = 100
 let delta = Math.round(Math.min(width, height) / numPoints)
-const squareSide = delta * .25
-const numRows = Math.round(height / delta)
-const numCols = Math.round(width / delta)
+let squareSide = delta * .25
+let numRows = Math.round(height / delta)
+let numCols = Math.round(width / delta)
 
 let points = new Array(numRows)
 for (let row = 0; row < numRows; row++) {
@@ -30,6 +29,20 @@ function changeTime(newVal) {
         return
     }
     timeScale = 7000 - newVal
+}
+function changeDensity(newVal) {
+    numPoints = newVal
+    delta = Math.round(Math.min(width, height) / numPoints)
+    squareSide = delta * .25
+    numRows = Math.round(height / delta)
+    numCols = Math.round(width / delta)
+    for (let row = 0; row < numRows; row++) {
+        points[row] = new Array(numCols)
+    }
+}
+function changeHue(newVal) {
+    hue = newVal
+    ctx.strokeStyle = `hsl(${hue}, 100%, 50%)`
 }
 
 noise.seed(Math.random())
@@ -46,9 +59,9 @@ function draw() {
         for (let col = 0; col < numCols; col++) {
             ctx.save()
             if (points[row][col]) {
-                ctx.fillStyle = 'rgb(0,161,255)'
+                ctx.fillStyle = `hsla(${hue},100%,50%,1)`
             } else {
-                ctx.fillStyle = 'rgba(0,167,255,0.25)'
+                ctx.fillStyle = `hsla(${hue},100%,50%,.25)`
             }
             ctx.translate(delta * col, delta * row)
             ctx.fillRect(0, 0, squareSide, squareSide)
