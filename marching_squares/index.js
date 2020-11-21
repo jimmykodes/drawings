@@ -23,13 +23,22 @@ for (let row = 0; row < numRows; row++) {
     points[row] = new Array(numCols)
 }
 
+let timeScale = 1500
+
+function changeTime(newVal) {
+    if (newVal === timeScale) {
+        return
+    }
+    timeScale = 7000 - newVal
+}
 
 noise.seed(Math.random())
+
 function draw() {
     ctx.clearRect(0, 0, width, height)
     for (let row = 0; row < numRows; row++) {
         for (let col = 0; col < numCols; col++) {
-            points[row][col] = noise.simplex3(row / 15, col / 15, new Date().getTime()/2000) > 0 ? 1 : 0
+            points[row][col] = noise.simplex3(row / 15, col / 15, new Date().getTime() / timeScale) > 0 ? 1 : 0
         }
     }
 
@@ -51,6 +60,7 @@ function draw() {
     }
     window.requestAnimationFrame(draw)
 }
+
 draw()
 
 function pointValue(row, col) {
