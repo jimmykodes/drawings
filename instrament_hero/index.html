@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        body {
+            background: black;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+</head>
+<body>
+<canvas id="game-bg"></canvas>
+<canvas id="fret"></canvas>
+<canvas id="bar"></canvas>
+<canvas id="pieces"></canvas>
+<script>
+
+    const keys = [false, false, false, false, false]
+    let drawFuncs = {
+        bg: null,
+        fret: null,
+        bar: null,
+        pieces: null,
+    }
+
+    function draw() {
+        drawFuncs.bar()
+        window.requestAnimationFrame(draw)
+    }
+
+    function initCanvas(selector, width, height, dpr) {
+        const canvas = document.getElementById(selector)
+        const ctx = canvas.getContext("2d")
+        canvas.width = width * dpr
+        canvas.height = height * dpr
+        canvas.style.height = `${height}px`
+        canvas.style.width = `${width}px`
+        ctx.scale(dpr, dpr)
+        return {
+            canvas,
+            ctx
+        }
+    }
+
+    function drawBG({ctx}) {
+        return function () {
+            ctx.fillStyle = "rgb(40,40,60)"
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
+            ctx.fillRect(0, 0, window.innerWidth, window.innerHeight)
+        }
+    }
+
+    function drawFret({ctx}) {
+        return function () {
+            ctx.clearRect(0, 0, window.innerWidth, window.innerHeight)
+            const width = window.innerWidth
+            const height = window.innerHeight
+            const fretTop = height * .1 // stop fret 10% from top of browser
+
+            const bottomFretWidth = Math.min(width * 5 / 7, 1000)
+            const bottomFretSpacing = bottomFretWidth / 5
+            const bottomFretGutter = (width - bottomFretWidth) / 2
+
+            const topFretSpacing = bottomFretSpacing * .1
+            const topFretGutter = (width - (topFretSpacing * 5)) / 2
+            ctx.fillStyle = 'rgb(26,26,26)'
+            ctx.strokeStyle = "rgb(255,255,255)"
+            ctx.beginPath()
+            ctx.moveTo(topFretGutter, fretTop)
+            ctx.lineTo(width - topFretGutter, fretTop)
+            ctx.lineTo(width - bottomFretGutter, height)
+            ctx.lineTo(bottomFretGutter, height)
+            ctx.lineTo(topFretGutter, fretTop)
+            ctx.fill()
+            ctx.stroke()
+            ctx.beginPath()
+            for (let i = 0; i < 6; i++) {
+                ctx.moveTo(topFretGutter + (topFretSpacing * i), fretTop)
+                ctx.lineTo(bottomFretGutter + (bottomFretSpacing * i), height)
+            }
+            ctx.stroke()
+        }
+    }
+
+    function drawBar({ctx}) {
+        return function () {
+            const width = window.innerWidth
+            const height = window.innerHeight
+            ctx.clearRect(0, 0, width, height)
+
+            const fretTop = height * .1 // stop fret 10% from top of browser
+            const barTop = height * .85
+
+            const bottomFretWidth = Math.min(width * 5 / 7, 1000)
+            const bottomFretSpacing = bottomFretWidth / 5
+            const bottomFretGutter = (width - bottomFretWidth) / 2
+
+
+            const topFretSpacing = bottomFretSpacing * .1
+            const topFretGutter = (width - (topFretSpacing * 5)) / 2
+            let tp = {x: topFretGutter, y: fretTop}
+            let bp = {x: bottomFretGutter, y: height}
+            const slope = (bp.x - tp.x) / (bp.y - tp.y)
+            // due to canvas coord system and the fret perspective dx ends up negative
+            // multiplying it by -1 so that we can intuitively us it below
+            let dx = (height - barTop) * slope * -1
+            const barLeft = bottomFretGutter + dx
+            const barRight = width - barLeft
+            const barLen = barRight - barLeft
+            const pSpacing = barLen / 5
+            // ctx.strokeStyle = "rgb(255,255,255)"
+            // ctx.beginPath()
+            // ctx.moveTo(barRight, barTop)
+            // ctx.lineTo(barLeft, barTop)
+            // ctx.stroke()
+            const fills = [
+                "rgb(0,255,0)",
+                "rgb(255,0,0)",
+                "rgb(255,255,0)",
+                "rgb(0,0,255)",
+                "rgb(255,72,0)",
+            ]
+
+            for (let i = 0; i < 5; i++) {
+                ctx.beginPath()
+                ctx.arc(barLeft + (pSpacing / 2) + (pSpacing * i), barTop, pSpacing * .4, 0, Math.PI * 2)
+                if (keys[i]) {
+                    ctx.fillStyle = fills[i]
+                    ctx.fill()
+                } else {
+                    ctx.strokeStyle = fills[i]
+                    ctx.stroke()
+                }
+            }
+        }
+
+    }
+
+    function main() {
+        let width = window.innerWidth
+        let height = window.innerHeight
+        const dpr = window.devicePixelRatio
+
+        let bg = initCanvas("game-bg", width, height, dpr)
+        let fret = initCanvas("fret", width, height, dpr)
+        let bar = initCanvas("bar", width, height, dpr)
+        let pieces = initCanvas("pieces", width, height, dpr)
+        const setKeys = function (key, val) {
+            switch (key) {
+                case "a":
+                    keys[0] = val
+                    break
+                case "s":
+                    keys[1] = val
+                    break
+                case "d":
+                    keys[2] = val
+                    break
+                case "f":
+                    keys[3] = val
+                    break
+                case "g":
+                    keys[4] = val
+                    break
+            }
+        }
+
+        window.addEventListener("keydown", function (event) {
+            setKeys(event.key, true)
+        })
+        window.addEventListener("keyup", function (event) {
+            setKeys(event.key, false)
+        })
+
+        drawFuncs = {
+            bg: drawBG(bg),
+            fret: drawFret(fret),
+            bar: drawBar(bar),
+        }
+        Object.values(drawFuncs).forEach(func => func())
+        window.addEventListener("resize", function () {
+            width = window.innerWidth
+            height = window.innerHeight
+            bg = initCanvas("game-bg", width, height, dpr)
+            fret = initCanvas("fret", width, height, dpr)
+            bar = initCanvas("bar", width, height, dpr)
+            pieces = initCanvas("pieces", width, height, dpr)
+            Object.values(drawFuncs).forEach(func => func())
+        })
+
+
+        window.requestAnimationFrame(draw)
+    }
+
+    window.onload = main
+</script>
+</body>
+</html>
