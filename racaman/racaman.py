@@ -4,9 +4,9 @@ import cairo
 
 
 def main():
-    width = 1500
-    height = 500
-    iterations = 150
+    width = 2560
+    height = 1440
+    iterations = 250
     cy = height / 2
     visited = [False] * width
     location = 0
