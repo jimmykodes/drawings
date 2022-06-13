@@ -22,6 +22,7 @@
 <body>
 <canvas id="canvas"></canvas>
 <script>
+    // language=GLSL
     const vertexShaderSrc = `
     attribute vec4 aVertexPosition;
     attribute vec4 aVertexColor;
@@ -36,6 +37,8 @@
         vColor = aVertexColor;
     }
     `
+
+    // language=GLSL
     const fragmentShaderSrc = `
     varying lowp vec4 vColor;
 
