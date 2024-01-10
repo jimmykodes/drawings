@@ -1,10 +1,38 @@
 class Cell {
-  constructor(init) {
-    this.value = init ? 1 : 0
+  constructor(rules) {
+    this.value = 0
+    this.rules = rules
+    this.colors = [
+      [0, 0, 0],
+      [0, 0, 0],
+      [0, 0, 0],
+    ]
   }
+
+
+  fromAbove(left, middle, right) {
+    for (let i = 0; i < this.colors.length; i++) {
+      const row = this.colors[i]
+      for (let j = 0; j < row.length; j++) {
+        const idx = left.colors[i][j] << 2 | middle.colors[i][j] << 1 | right.colors[i][j]
+        const mask = idx > 0 ? 1 << idx : 0
+        if ((mask & this.rules[i][j]) > 0) {
+          this.colors[i][j] = 1
+        }
+      }
+    }
+  }
+
+  color() {
+    const r = this.colors[0].reduce((a, b) => a + b) * 85
+    const g = this.colors[1].reduce((a, b) => a + b) * 85
+    const b = this.colors[2].reduce((a, b) => a + b) * 85
+    return `rgb(${r}, ${g}, ${b})`
+  }
+
   draw(ctx, x, y, dim) {
     ctx.save()
-    ctx.fillStyle = this.value == 1 ? "#ffffff" : "#000000"
+    ctx.fillStyle = this.color()
     ctx.beginPath()
     ctx.rect(x, y, dim, dim)
     ctx.fill()
@@ -13,15 +41,42 @@ class Cell {
 }
 
 function drawer(ctx, width, height) {
-  const numCells = 120
+  const numCells = 200
   const cellDim = width / numCells
   const maxRows = Math.ceil(height / cellDim)
+  const rules = [
+    [13, 1, 18],
+    [89, 3, 28],
+    [126, 9, 30],
+  ]
 
+  const fourth = Math.floor(numCells / 4)
   let cells = []
   for (let y = 0; y < maxRows; y++) {
     cells.push([])
     for (let x = 0; x < numCells; x++) {
-      cells[y].push(new Cell(y == 0 && x == Math.floor(numCells / 2)))
+      const c = new Cell(rules)
+      if (y == 0 && x == fourth) {
+        c.colors = [
+          [1, 1, 1],
+          [0, 0, 0],
+          [0, 0, 0],
+        ]
+      } else if (y == 0 && x == (fourth * 2)) {
+        c.colors = [
+          [0, 0, 0],
+          [1, 1, 1],
+          [0, 0, 0],
+        ]
+      } else if (y == 0 && x == (fourth * 3)) {
+        c.colors = [
+          [0, 0, 0],
+          [0, 0, 0],
+          [1, 1, 1],
+        ]
+      }
+
+      cells[y].push(c)
     }
   }
 
@@ -34,7 +89,7 @@ function drawer(ctx, width, height) {
         cells[y][x].draw(ctx, X, Y, cellDim)
       }
     }
-    iterate(cells, 126)
+    iterate(cells, rules)
     window.setTimeout(() => {
       window.requestAnimationFrame(draw)
     }, 10)
@@ -49,27 +104,20 @@ function iterate(cells, rule) {
   row = cells[1]
   newRow = []
   {
-    // calc first cell using wrap to end
-    const idx = row[row.length - 1].value << 2 | row[0].value << 1 | row[1].value
-    const mask = idx > 0 ? 1 << idx : 0
-    const val = rule & mask
-
-    newRow.push(new Cell(val))
+    const c = new Cell(rule)
+    c.fromAbove(row[row.length - 1], row[0], row[1])
+    newRow.push(c)
   }
   for (let x = 1; x < row.length - 1; x++) {
-    const idx = row[x - 1].value << 2 | row[x].value << 1 | row[x + 1].value
-    const mask = idx > 0 ? 1 << idx : 0
-    const val = rule & mask
-
-    newRow.push(new Cell(val))
+    const c = new Cell(rule)
+    c.fromAbove(row[x - 1], row[x], row[x + 1])
+    newRow.push(c)
   }
   {
     // calc last cell using wrap to front
-    const idx = row[row.length - 2].value << 2 | row[row.length - 1].value << 1 | row[0].value
-    const mask = idx > 0 ? 1 << idx : 0
-    const val = rule & mask
-
-    newRow.push(new Cell(val))
+    const c = new Cell(rule)
+    c.fromAbove(row[row.length - 2], row[row.length - 1], row[0])
+    newRow.push(c)
   }
   cells[0] = newRow
 }
