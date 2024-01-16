@@ -27,7 +27,7 @@ class Cell {
     const r = this.colors[0].reduce((a, b) => a + b) * 85
     const g = this.colors[1].reduce((a, b) => a + b) * 85
     const b = this.colors[2].reduce((a, b) => a + b) * 85
-    return `rgb(${r}, ${g}, ${b})`
+    return `rgb(${255 - r}, ${255 - g}, ${255 - b})`
   }
 
   draw(ctx, x, y, dim) {
@@ -58,21 +58,21 @@ function drawer(ctx, width, height) {
       const c = new Cell(rules)
       if (y == 0 && x == fourth) {
         c.colors = [
-          [1, 1, 1],
-          [0, 0, 0],
-          [0, 0, 0],
+          [0, 0, 1],
+          [0, 1, 0],
+          [1, 0, 0],
         ]
       } else if (y == 0 && x == (fourth * 2)) {
         c.colors = [
-          [0, 0, 0],
-          [1, 1, 1],
-          [0, 0, 0],
+          [0, 1, 0],
+          [1, 0, 0],
+          [0, 0, 1],
         ]
       } else if (y == 0 && x == (fourth * 3)) {
         c.colors = [
-          [0, 0, 0],
-          [0, 0, 0],
-          [1, 1, 1],
+          [1, 0, 0],
+          [0, 0, 1],
+          [0, 1, 0],
         ]
       }
 
